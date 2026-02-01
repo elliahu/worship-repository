@@ -1,0 +1,8 @@
+runtime:
+  cpu: 1
+  memory: 512Mi
+  concurrency: 80
+
+env:
+  - variable: API_DATA_SOURCE
+    value: "https://api.example.com/v1"
