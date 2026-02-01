@@ -4,5 +4,9 @@ runtime:
   concurrency: 80
 
 env:
-  - variable: API_DATA_SOURCE
-    value: "https://api.example.com/v1"
+  - variable: PCO_API_DATA_SOURCE
+    value: "https://api.planningcenteronline.com"
+  - variable: PCO_CLIENT_ID
+    value: PCO_CLIENT_ID
+  - variable: PCO_ACCESS_TOKEN
+    value: PCO_ACCESS_TOKEN
