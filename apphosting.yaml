@@ -7,6 +7,6 @@ env:
   - variable: PCO_API_DATA_SOURCE
     value: "https://api.planningcenteronline.com"
   - variable: PCO_CLIENT_ID
-    value: PCO_CLIENT_ID
+    secret: PCO_CLIENT_ID
   - variable: PCO_ACCESS_TOKEN
-    value: PCO_ACCESS_TOKEN
+    secret: PCO_ACCESS_TOKEN
