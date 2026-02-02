@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/private";
+import { PCO_API_DATA_SOURCE, PCO_CLIENT_ID, PCO_ACCESS_TOKEN } from "$env/static/private";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ url }) => {
@@ -7,10 +7,10 @@ export const load = async ({ url }) => {
     const page = Number(url.searchParams.get('page')) || 1;
     const offset = (page - 1) * perPage;
 
-    const credentials = btoa(`${env.PCO_CLIENT_ID}:${env.PCO_ACCESS_TOKEN}`);
+    const credentials = btoa(`${PCO_CLIENT_ID}:${PCO_ACCESS_TOKEN}`);
 
     // Build URL with dynamic paging
-    const fetchUrl = `${env.PCO_API_DATA_SOURCE}/services/v2/songs?per_page=${perPage}&offset=${offset}`;
+    const fetchUrl = `${PCO_API_DATA_SOURCE}/services/v2/songs?per_page=${perPage}&offset=${offset}`;
     
     const response = await fetch(fetchUrl, {
         method: 'GET',

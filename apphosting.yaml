@@ -6,7 +6,18 @@ runtime:
 env:
   - variable: PCO_API_DATA_SOURCE
     value: "https://api.planningcenteronline.com"
+    availability:
+    -   BUILD
+    -   RUNTIME
+
   - variable: PCO_CLIENT_ID
     secret: PCO_CLIENT_ID
+    availability:
+    -   BUILD
+    -   RUNTIME
+    
   - variable: PCO_ACCESS_TOKEN
     secret: PCO_ACCESS_TOKEN
+    availability:
+    -   BUILD
+    -   RUNTIME
