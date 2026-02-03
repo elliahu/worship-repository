@@ -7,17 +7,20 @@ import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { getAllArrangementsForSong, getAllSongs } from "./helpers/pcoApiWrapper";
 import { PCO_CLIENT_ID, PCO_ACCESS_TOKEN } from "./config/secrets"
 import { Song } from "./types/song";
+import { deepSanitize } from "./helpers/firestore"
 
 
 // Set the global options
 setGlobalOptions({ maxInstances: 2 });
 
+// Get firestore object
 admin.initializeApp();
 const db = admin.firestore();
 
 
 // Task handler for processing single song
 export const processSongTask = onTaskDispatched({
+    region: "europe-west3",
     secrets: [PCO_ACCESS_TOKEN, PCO_CLIENT_ID],
     retryConfig: {
         maxAttempts: 3,
@@ -36,30 +39,12 @@ export const processSongTask = onTaskDispatched({
     // Add the arrangement to song 
     song.arrangements = arrangements;
 
-    // Save to firestore
+    // Clean the song
+    const cleanedSong = deepSanitize(song);
+
+    // Save as a single document
     const songRef = db.collection("songs").doc(song.id);
-    await songRef.set({
-        ...song,
-        arrangements: undefined // we store arrangements as subcollections
-    }, { merge: true }); // merge allows overwrite but keeps existing fields
-
-    // Store arrangements as subcollections 
-    for (const arrangement of arrangements) {
-        const arrRef = songRef.collection("arrangements").doc(arrangement.id);
-
-        await arrRef.set({
-            ...arrangement,
-            keys: undefined,      // stored as subcollection
-        }, { merge: true });
-
-        // Store keys as subcollection
-        if (arrangement.keys?.length) {
-            for (const key of arrangement.keys) {
-                const keyRef = arrRef.collection("keys").doc(key.id);
-                await keyRef.set(key, { merge: true });
-            }
-        }
-    }
+    await songRef.set(cleanedSong, { merge: true });
 
     console.log(`Song ${song.id} saved to Firestore successfully.`);
 });
@@ -68,6 +53,7 @@ export const processSongTask = onTaskDispatched({
 // and stores them in the Firestore database
 export const syncSongs = onSchedule({
     schedule: "every day 00:00",
+    region: "europe-west3",
     secrets: [PCO_CLIENT_ID, PCO_ACCESS_TOKEN]
 }, async (event: ScheduledEvent) => {
     // Log the start of the function for debugging
@@ -75,7 +61,7 @@ export const syncSongs = onSchedule({
     try {
         // Get all the songs
         const songs = await getAllSongs();
-        const queue = getFunctions().taskQueue("processSongTask");
+        const queue = getFunctions().taskQueue("projects/worship-repository/locations/europe-west3/functions/processSongTask",);
         const enqueues = songs.map((song: Song) =>
             queue.enqueue(song) // This adds the work to the queue
         );
