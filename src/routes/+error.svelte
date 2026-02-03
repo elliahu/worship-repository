@@ -17,7 +17,7 @@
     </header>
     <div class="flex flex-col sm:flex-row gap-4">
         <Button
-            href="/browse"
+            href="/songs"
             size="lg"
             class="group gap-2 px-8"
             variant="outline"
