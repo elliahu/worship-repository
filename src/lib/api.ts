@@ -6,3 +6,9 @@ export const callGetSongsList = async (payload: any = {}) => {
     const result = await func(payload);
     return result.data;
 };
+
+export const callGetSongDetail = async (payload : {id: number}) => {
+    const func = httpsCallable(functions, "getSongDetail");
+    const result = await func(payload);
+    return result.data;
+};

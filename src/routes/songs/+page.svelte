@@ -2,15 +2,34 @@
   import * as Table from "$lib/components/ui/table";
   import { callGetSongsList } from "$lib/api";
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import * as Alert from "$lib/components/ui/alert/index.js";
+  import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
 
   let data: { items: any[] } | null = null;
   let loading = true;
   let error: string | null = null;
 
+  // Helper function to format ISO dates
+  const formatDate = (iso?: string) => {
+    if (!iso) return "Never";
+    const date = new Date(iso);
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour12: false,
+    });
+  };
+
+  const goToDetail = (id: string) => {
+    goto(`/songs/${id}`);
+  };
+
   onMount(async () => {
     try {
       data = await callGetSongsList();
-      console.log(data);
     } catch (e) {
       console.error(e);
       error = "Failed to load songs.";
@@ -45,24 +64,36 @@
       <Table.Body>
         {#if loading}
           <Table.Row>
-            <Table.Cell colspan={2} class="text-center py-10">
-              Loading songs…
+            <Table.Cell colspan={2} class="py-10">
+              <div class="flex items-center justify-center space-x-2">
+                <Spinner />
+                <span>Loading songs…</span>
+              </div>
             </Table.Cell>
           </Table.Row>
         {:else if error}
           <Table.Row>
             <Table.Cell colspan={2} class="text-center py-10 text-destructive">
-              {error}
+              
+              <Alert.Root variant="destructive">
+                <AlertCircleIcon />
+                <Alert.Title>{error}</Alert.Title>
+              </Alert.Root>
             </Table.Cell>
           </Table.Row>
         {:else if data && data.items.length > 0}
           {#each data.items as item}
-            <Table.Row>
-              <Table.Cell class="font-medium">
-                {item.title}
+            <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Cell class="p-0">
+                <button
+                  on:click={() => goToDetail(item.id)}
+                  class="w-full h-full text-left px-4 py-3 cursor-pointer"
+                >
+                  {item.title}
+                </button>
               </Table.Cell>
-              <Table.Cell>
-                {item.last_scheduled_short_dates || "Never"}
+              <Table.Cell class="p-0">
+                {formatDate(item.last_scheduled_at)}
               </Table.Cell>
             </Table.Row>
           {/each}
