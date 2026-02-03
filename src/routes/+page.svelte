@@ -14,7 +14,7 @@
   </header>
 
   <div class="flex flex-col sm:flex-row gap-4">
-    <Button href="/browse" size="lg" class="group gap-2 px-8">
+    <Button href="/songs" size="lg" class="group gap-2 px-8">
       Take me there
       <ArrowRight class="size-4 transition-transform group-hover:translate-x-1" />
     </Button>
