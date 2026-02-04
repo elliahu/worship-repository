@@ -1,7 +1,6 @@
 import * as logger from "firebase-functions/logger";
 import { PCO_API_DATA_SOURCE } from "../config/secrets";
 import { getPcoAuthHeader } from "../config/pco";
-import { Song, Arrangement, Key, ArrangementSections, ArrangementSection } from "../types/song";
 
 
 // Helper function to GET request all songs from PCO
@@ -12,7 +11,7 @@ export const getAllSongs = async () => {
     let page = 1; // Current page
     let totalRetrieved = 0; // Total count of retrieved songs
     let nextPage = true; // Should we fetch the next page?
-    const songs: Song[] = []; // Retrieved songs
+    const songs: any[] = []; // Retrieved songs
 
     while (nextPage) {
         // Build the fetch url
@@ -47,18 +46,7 @@ export const getAllSongs = async () => {
             for (const item of data) {
                 songs.push({
                     id: item.id,
-                    title: item.attributes.title,
-                    created_at: item.attributes.created_at,
-                    updated_at: item.attributes.updated_at,
-                    admin: item.attributes.admin,
-                    author: item.attributes.author,
-                    copyright: item.attributes.copyright,
-                    hidden: item.attributes.hidden,
-                    notes: item.attributes.notes,
-                    themes: item.attributes.themes,
-                    last_scheduled_short_date: item.attributes.last_scheduled_short_date,
-                    last_scheduled_at: item.attributes.last_scheduled_at,
-                    ccli_number: item.attributes.ccli_number
+                    ...item.attributes
                 });
             }
         }
@@ -95,56 +83,35 @@ export const getAllArrangementsForSong = async (song_id: string) => {
     const data = result.data;
     const included = result.included;
 
-    const arrangements: Arrangement[] = [];
+    const arrangements: any[] = [];
     if (Array.isArray(data)) {
         for (const item of data) {
             arrangements.push({
                 id: item.id,
-                name: item.attributes.name,
-                bpm: item.attributes.bpm,
-                created_at: item.attributes.created_at,
-                updated_at: item.attributes.updated_at,
-                has_chords: item.attributes.has_chords,
-                has_chord_chart: item.attributes.has_chord_chart,
-                length: item.attributes.length,
-                meter: item.attributes.meter,
-                notes: item.attributes.notes,
-                chord_chart: item.attributes.chord_chart,
-                chord_chart_key: item.attributes.chord_chart_key,
-                sequence: item.attributes.sequence,
-                sequence_short: item.attributes.sequence_short,
-                sequence_full: item.attributes.sequence_full,
-                lyrics: item.attributes.lyrics
+                ...item.attributes
             });
         }
     }
 
-    const keys: Key[] = [];
-    const sections: ArrangementSections[] = [];
+    const keys: any[] = [];
+    const sections: any[] = [];
     if (Array.isArray(included)) {
         for (const item of included) {
             if (item.type == "Key") {
                 keys.push({
                     id: item.id,
-                    created_at: item.attributes.created_at,
-                    updated_at: item.attributes.updated_at,
-                    name: item.attributes.name,
-                    starting_key: item.attributes.starting_key,
-                    ending_key: item.attributes.ending_key,
-                    starting_minor: item.attributes.starting_minor,
-                    ending_minor: item.attributes.ending_minor
+                    ...item.attributes
                 });
             } else if (item.type == "ArrangementSections") {
-                const section: ArrangementSections = {
+                const section: any = {
                     id: item.id,
                     sections: []
                 };
 
                 for (const s of item.attributes.sections) {
                     section.sections!.push({
-                        label: s.label,
-                        lyrics: s.lyrics
-                    } as ArrangementSection);
+                        ...s
+                    });
                 }
 
                 sections.push(section);
@@ -153,12 +120,12 @@ export const getAllArrangementsForSong = async (song_id: string) => {
     }
 
     // Link arrangements with their keys and their sections:
-    const keyMap = new Map<string, Key>();
+    const keyMap = new Map<string, any>();
     for (const key of keys) {
         keyMap.set(key.id, key);
     }
 
-    const sectionMap = new Map<string, ArrangementSections>();
+    const sectionMap = new Map<string, any>();
     for (const section of sections) {
         sectionMap.set(section.id, section);
     }
@@ -173,7 +140,7 @@ export const getAllArrangementsForSong = async (song_id: string) => {
         if (Array.isArray(keyRels)) {
             arrangement.keys = keyRels
                 .map((rel: any) => keyMap.get(rel.id))
-                .filter(Boolean) as Key[];
+                .filter(Boolean) as any[];
         }
 
         // ---- Sections ----

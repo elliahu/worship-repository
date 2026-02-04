@@ -58,3 +58,13 @@ export interface Song {
     arrangements?: Arrangement[];
 }
 
+export interface IndexItem{
+    id: string,
+    title: string,
+    author?: string | undefined;
+    last_scheduled?: string | undefined;
+}
+
+export interface Index{
+    index: IndexItem[];
+}

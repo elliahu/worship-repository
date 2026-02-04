@@ -1,15 +1,22 @@
 import { HttpsError, onCall } from "firebase-functions/https";
 import { db } from "./helpers/firebase";
 import * as logger from "firebase-functions/logger";
-import { Song } from "./types/song";
+import { OrderByDirection } from "firebase-admin/firestore";
 
 // Lists all songs 
 export const getSongsList = onCall({
     region: "europe-west3",
 }, async (request) => {
     try {
+        const orderBy: string = request.data.orderBy ?? "title";
+        const orderByDirection: OrderByDirection = request.data.orderByDirection ?? "asc";
+
+        if (!["asc", "desc"].includes(orderByDirection)){
+            throw new HttpsError("invalid-argument", "orderByDirection invalid: valid values are asc,desc");
+        }
+
         const collectionRef = db.collection("songs");
-        const snapshot = await collectionRef.get();
+        const snapshot = await collectionRef.orderBy(`${orderBy}`, `${orderByDirection}`).get();
 
         if (snapshot.empty) {
             return { items: [] };
@@ -51,7 +58,7 @@ export const getSongDetail = onCall({
             throw new HttpsError("not-found", `No song with id: ${songId}`);
         }
 
-        const data = songSnap.data() as Song;
+        const data = songSnap.data();
         return { item: data };
 
     } catch (error) {

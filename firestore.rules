@@ -1,17 +1,21 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Match any document in the 'songs' collection
+    // 1. Songs Collection
     match /songs/{songId} {
-      // Allow clients to read the data
-      // Change to 'if request.auth != null' if login is required
-      allow read: if true;
+      allow read: if true; 
+      allow write: if false; // Only Admin SDK can write
+    }
 
-      // Deny all writes (Create, Update, Delete) from the Client SDKs
-      // The Admin SDK will bypass this
-      allow write: if false;
+    // 2. Metadata Collection (For the Sync Marker)
+    match /metadata/{document} {
+      // Clients MUST be able to read this for the caching logic to work
+      allow read: if true; 
+      
+      // Explicitly deny writes so users can't fakes a "sync"
+      allow write: if false; 
     }
     
   }

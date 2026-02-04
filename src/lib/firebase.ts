@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 // This is NOT a secret
 const firebaseConfig = {
@@ -17,3 +18,7 @@ const app = getApps().length
   : initializeApp(firebaseConfig);
 
 export const functions = getFunctions(app, "europe-west3");
+/*export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});*/
+export const db = getFirestore(app);
