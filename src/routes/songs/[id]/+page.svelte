@@ -1,17 +1,18 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { callGetSongDetail } from "$lib/api";
+    import { getSongDetail } from "$lib/api";
     import { Spinner } from "$lib/components/ui/spinner";
+    import type { Song } from "$lib/types";
 
     export let params;
 
-    let data: { item: any } | null = null;
+    let data: Song | null = null;
     let loading = true;
     let error: string | null = null;
 
     onMount(async () => {
         try {
-            data = await callGetSongDetail({ id: params.id });
+            data = await getSongDetail({id: params.id});
         } catch (e) {
             console.error(e);
             error = "Failed to load song.";
@@ -29,8 +30,8 @@
         </div>
     {:else if error}
         <div class="text-red-600">{error}</div>
-    {:else if data?.item}
-        {@const song = data.item}
+    {:else if data}
+        {@const song = data}
 
         <!-- Header -->
         <div class="space-y-2">

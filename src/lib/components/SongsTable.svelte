@@ -1,132 +1,94 @@
-<script context="module" lang="ts">
-    export type Song = {
-        id: string;
-        title: string;
-        author: string;
-        last_scheduled_at?: string;
-    };
-</script>
-
 <script lang="ts">
-    import * as Table from "$lib/components/ui/table";
-    import { goto } from "$app/navigation";
-    import { Spinner } from "$lib/components/ui/spinner";
-    import * as Alert from "$lib/components/ui/alert";
-    import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
-    import { Document } from "flexsearch";
+  import * as Table from "$lib/components/ui/table";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import * as Alert from "$lib/components/ui/alert/index.js";
+  import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
+  import type { Index } from "$lib/types";
+  import { Input } from "./ui/input";
 
-    export let items: Song[] = [];
-    export let loading = false;
-    export let error: string | null = null;
+  export let data: Index | null = null;
+  export let loading: boolean = false;
+  export let error: string | null = null;
+  export let onSelect: (id: string) => void;
 
-    let query = "";
-    let filteredItems: Song[] = [];
+  let searchTerm = "";
 
-    const index = new Document<Song>({
-        document: {
-            id: "id",
-            index: ["title", "author"],
-            store: true,
-        },
-    });
-
-    const formatDate = (iso?: string) => {
-        if (!iso) return "Never";
-        const date = new Date(iso);
-        return date.toLocaleString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour12: false,
-        });
-    };
-
-    const goToDetail = (id: string) => {
-        goto(`/songs/${id}`);
-    };
-
-    // Rebuild index when items change
-    $: if (items) {
-        index.clear();
-        items.forEach((song) => index.add(song));
-        filteredItems = items;
-    }
-
-    // Reactive search
-    $: if (!query.trim()) {
-        filteredItems = items;
-    } else {
-        const results = index.search(query, { enrich: true });
-        filteredItems = results
-            .flatMap((r) => r.result.map((res) => res.doc))
-            .filter((doc): doc is Song => doc !== null);
-    }
+  // Filtered list based on search term (title or author)
+  $: filtered =
+    data?.index.filter(
+      (item) =>
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.author?.toLowerCase().includes(searchTerm.toLowerCase()),
+    ) || [];
 </script>
 
-<!-- Search + count -->
-<div class="flex items-center justify-between gap-4 mb-4">
-    <input
-        bind:value={query}
-        placeholder="Search title or author…"
-        class="h-9 w-64 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-    />
+<div class="space-y-2">
+  <!-- Search + Summary -->
+  <div class="flex items-center justify-between space-x-4">
+    <Input type="email" placeholder="Search by title or author..." class="max-w-xs" bind:value={searchTerm}/>
 
-    <p class="text-sm text-muted-foreground">
-        Showing {filteredItems.length} of {items.length} songs
-    </p>
-</div>
+    {#if loading}
+      <p class="text-sm text-muted-foreground">Loading…</p>
+    {:else if data}
+      <p class="text-sm text-muted-foreground">
+        Showing {filtered.length} of {data.index.length} songs
+      </p>
+    {/if}
+  </div>
 
-<div class="border rounded-md bg-card">
+  <div class="border rounded-md bg-card">
     <Table.Root>
-        <Table.Header>
-            <Table.Row>
-                <Table.Head>Title</Table.Head>
-                <Table.Head>Last Scheduled</Table.Head>
-            </Table.Row>
-        </Table.Header>
+      <Table.Header>
+        <Table.Row>
+          <Table.Head class="p-4">Title</Table.Head>
+          <Table.Head class="p-4">Last Scheduled</Table.Head>
+        </Table.Row>
+      </Table.Header>
 
-        <Table.Body>
-            {#if loading}
-                <Table.Row>
-                    <Table.Cell colspan={2} class="py-10 text-center">
-                        <Spinner /> Loading songs…
-                    </Table.Cell>
-                </Table.Row>
-            {:else if error}
-                <Table.Row>
-                    <Table.Cell colspan={2} class="py-10">
-                        <Alert.Root variant="destructive">
-                            <AlertCircleIcon />
-                            <Alert.Title>{error}</Alert.Title>
-                        </Alert.Root>
-                    </Table.Cell>
-                </Table.Row>
-            {:else if filteredItems.length > 0}
-                {#each filteredItems as item}
-                    <Table.Row class="hover:bg-muted/50 transition-colors">
-                        <Table.Cell class="p-0">
-                            <button
-                                on:click={() => goToDetail(item.id)}
-                                class="w-full px-4 py-3 text-left cursor-pointer"
-                            >
-                                <div class="font-medium">{item.title}</div>
-                                <div class="text-xs text-muted-foreground">
-                                    {item.author}
-                                </div>
-                            </button>
-                        </Table.Cell>
-                        <Table.Cell>
-                            {formatDate(item.last_scheduled_at)}
-                        </Table.Cell>
-                    </Table.Row>
-                {/each}
-            {:else}
-                <Table.Row>
-                    <Table.Cell colspan={2} class="py-10 text-center">
-                        No matching songs.
-                    </Table.Cell>
-                </Table.Row>
-            {/if}
-        </Table.Body>
+      <Table.Body>
+        {#if loading}
+          <Table.Row>
+            <Table.Cell colspan={2} class="py-10">
+              <div class="flex items-center justify-center space-x-2">
+                <Spinner />
+                <span>Loading songs…</span>
+              </div>
+            </Table.Cell>
+          </Table.Row>
+        {:else if error}
+          <Table.Row>
+            <Table.Cell colspan={2} class="text-center py-10">
+              <Alert.Root variant="destructive">
+                <AlertCircleIcon />
+                <Alert.Title>{error}</Alert.Title>
+              </Alert.Root>
+            </Table.Cell>
+          </Table.Row>
+        {:else if filtered.length > 0}
+          {#each filtered as item}
+            <Table.Row class="hover:bg-muted/50 transition-colors">
+              <Table.Cell class="p-0">
+                <button
+                  on:click={() => onSelect(item.id)}
+                  class="w-full h-full text-left px-4 py-3 cursor-pointer"
+                >
+                  <div class="font-medium">{item.title}</div>
+                  <div class="text-xs text-muted-foreground">{item.author}</div>
+                </button>
+              </Table.Cell>
+              <Table.Cell class="p-4">
+                {item.last_scheduled}
+              </Table.Cell>
+            </Table.Row>
+          {/each}
+        {:else}
+          <Table.Row>
+            <Table.Cell colspan={2} class="text-center py-10">
+              No songs found.
+            </Table.Cell>
+          </Table.Row>
+        {/if}
+      </Table.Body>
     </Table.Root>
+  </div>
 </div>

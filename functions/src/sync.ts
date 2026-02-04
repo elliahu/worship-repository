@@ -5,8 +5,8 @@ import { getFunctions } from "firebase-admin/functions";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { getAllArrangementsForSong, getAllSongs } from "./helpers/pcoApiWrapper";
 import { PCO_CLIENT_ID, PCO_ACCESS_TOKEN } from "./config/secrets"
-import { Song } from "./types/song";
 import { deepSanitize } from "./helpers/firebase"
+import { onCall } from "firebase-functions/https";
 
 
 
@@ -23,8 +23,8 @@ export const processSongTask = onTaskDispatched({
     },
 }, async (req) => {
     try {
-        const song = req.data as Song;
-        console.log(`Processing song: ${song.id}`);
+        const song = req.data;
+        logger.info(`Processing song: ${song.id}`);
 
         // For each song we need to fetch all its arrangements as well
         const arrangements = await getAllArrangementsForSong(song.id);
@@ -39,11 +39,24 @@ export const processSongTask = onTaskDispatched({
         const songRef = db.collection("songs").doc(song.id);
         await songRef.set(cleanedSong, { merge: true });
 
-        console.log(`Song ${song.id} saved to Firestore successfully.`);
-    } catch (error){
+        logger.info(`Song ${song.id} saved to Firestore successfully.`);
+    } catch (error) {
         logger.error("Error during song processing: ", error);
     }
 });
+
+const buildSongsIndex = async (songs: any[]) => {
+    const index: any = songs.map((song) => ({
+        id: song.id,
+        title: song.title,
+        author: song.author ?? null,
+        last_scheduled: song.last_scheduled_short_date ?? null
+    }));
+
+    const indexRef = db.collection("metadata").doc("index");
+    await indexRef.set({index: index}, { merge: true });
+    logger.info("Index updated");
+};
 
 // Scheduled cloud function that fetches all tracked song data from PCO 
 // and stores them in the Firestore database
@@ -58,9 +71,12 @@ export const syncSongs = onSchedule({
         // Get all the songs
         const songs = await getAllSongs();
         const queue = getFunctions().taskQueue("projects/worship-repository/locations/europe-west3/functions/processSongTask",);
-        const enqueues = songs.map((song: Song) =>
+        const enqueues = songs.map((song) =>
             queue.enqueue(song) // This adds the work to the queue
         );
+
+        // Build index
+        await buildSongsIndex(songs);
 
         // Wait for all te resolve
         await Promise.all(enqueues);
@@ -70,6 +86,4 @@ export const syncSongs = onSchedule({
         logger.error("Error during song synchronization: ", error);
     }
 });
-
-
 
