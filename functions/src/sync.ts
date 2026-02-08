@@ -6,7 +6,6 @@ import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { getAllArrangementsForSong, getAllSongs } from "./helpers/pcoApiWrapper";
 import { PCO_CLIENT_ID, PCO_ACCESS_TOKEN } from "./config/secrets"
 import { deepSanitize } from "./helpers/firebase"
-import { onCall } from "firebase-functions/https";
 
 
 
