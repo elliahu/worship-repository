@@ -85,7 +85,7 @@ export const syncSongs = onSchedule({
 
         // Wait for all te resolve
         await Promise.all(enqueues);
-        console.log(`Enqueued ${songs.length} tasks.`);
+        logger.info(`Enqueued ${songs.length} tasks.`);
 
     } catch (error) {
         logger.error("Error during song synchronization: ", error);

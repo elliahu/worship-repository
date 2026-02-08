@@ -2,7 +2,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
 import { db } from "./firebase";
 import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
-import type { Index, Song } from "./types";
+import type { Index, IndexItem, Song } from "./types";
 
 // Calls a cloud function
 /**
@@ -49,8 +49,26 @@ export const getSongDetail = async (options: { id: string }) => {
     return songSnap.data() as Song;
 };
 
+function sortBy<T>(
+  field: keyof T,
+  order: "asc" | "desc" = "asc"
+) {
+  return (a: T, b: T) => {
+    const av = a[field];
+    const bv = b[field];
+
+    if (typeof av === "number" && typeof bv === "number") {
+      return order === "asc" ? av - bv : bv - av;
+    }
+
+    return order === "asc"
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+  };
+}
+
 export const getSongsIndex = async (options: {
-    orderBy: string,
+    orderBy: keyof IndexItem,
     orderByDirection: "asc" | "desc"
 }) => {
     const indexRef = doc(db, "metadata", "index");
@@ -60,5 +78,8 @@ export const getSongsIndex = async (options: {
         throw Error("Index not found. Wait for sync.");
     }
 
-    return indexSnap.data() as Index;
+    const index = indexSnap.data() as Index;
+    index.index.sort(sortBy<IndexItem>(options.orderBy, options.orderByDirection))
+
+    return index;
 };

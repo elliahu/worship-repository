@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { Info } from 'lucide-svelte';
+    import { Info } from "lucide-svelte";
     import { parseChordSheet } from "$lib/chordParser";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import * as Alert from "$lib/components/ui/alert/index.js";
+    import { Printer, Fullscreen, FileMusic, File } from "lucide-svelte";
 
     let {
         songInput,
@@ -41,19 +42,8 @@
         class="flex items-center gap-2 mb-6 pb-4 border-b border-border sticky top-0 bg-card/95 backdrop-blur-sm z-10 print:hidden"
     >
         <div
-            class="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border"
+            class="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border w-full"
         >
-            <span
-                class="text-[10px] uppercase tracking-wider text-muted-foreground px-2"
-            >
-                Tools:
-            </span>
-
-            <Button
-                onclick={() => (showChords = !showChords)}
-                variant={showChords ? "outline" : "secondary"}
-                >{showChords ? "Chords On" : "Chords Off"}</Button
-            >
             <Select.Root
                 type="single"
                 name="selectedFormat"
@@ -76,28 +66,36 @@
                     </Select.Group>
                 </Select.Content>
             </Select.Root>
+
+            <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
 
-            <button
+            {#if showChords}
+                <FileMusic
+                    onclick={() => (showChords = !showChords)}
+                    class="cursor-pointer"
+                    strokeWidth={1}
+                />
+            {:else}
+                <File
+                    onclick={() => (showChords = !showChords)}
+                    class="cursor-pointer"
+                    strokeWidth={1}
+                />
+            {/if}
+
+            <!--Devider-->
+            <div class="w-[1px] h-4 bg-border mx-1"></div>
+
+            <Fullscreen class="cursor-pointer" strokeWidth={1} />
+
+            <!--Devider-->
+            <div class="w-[1px] h-4 bg-border mx-1"></div>
+            <Printer
                 onclick={handlePrint}
-                class="p-1.5 hover:bg-background rounded-md cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-                title="Print Song"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="6 9 6 2 18 2 18 9" /><path
-                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
-                    /><rect width="12" height="8" x="6" y="14" /></svg
-                >
-            </button>
+                class="cursor-pointer"
+                strokeWidth={1}
+            />
         </div>
     </div>
 

@@ -8,7 +8,7 @@
 
 <Accordion.Root type="single" class="w-full" value="item-1">
     <Accordion.Item value="item-1">
-        <Accordion.Trigger>Arrangement details</Accordion.Trigger>
+        <Accordion.Trigger><h1 class="text-base">Arrangement details</h1></Accordion.Trigger>
         <Accordion.Content>
             <Item.Root variant="muted">
                 <Item.Content>
