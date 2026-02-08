@@ -50,7 +50,7 @@ const buildSongsIndex = async (songs: any[]) => {
         id: song.id,
         title: song.title,
         author: song.author ?? null,
-        last_scheduled: song.last_scheduled_short_date ?? null
+        last_scheduled: song.last_scheduled_short_dates ?? null
     }));
 
     const indexRef = db.collection("metadata").doc("index");
