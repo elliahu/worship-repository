@@ -3,7 +3,7 @@ import * as logger from "firebase-functions/logger";
 import { db } from "./helpers/firebase"
 import { getFunctions } from "firebase-admin/functions";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { getAllArrangementsForSong, getAllSongs } from "./helpers/pcoApiWrapper";
+import { getAllArrangementsForSong,getAllAttachmentsForArrangement, getAllSongs } from "./helpers/pcoApiWrapper";
 import { PCO_CLIENT_ID, PCO_ACCESS_TOKEN } from "./config/secrets"
 import { deepSanitize } from "./helpers/firebase"
 
@@ -18,7 +18,7 @@ export const processSongTask = onTaskDispatched({
         minBackoffSeconds: 20, // Wait at least 20s if it fails (rate limit hit)
     },
     rateLimits: {
-        maxConcurrentDispatches: 2, // Process only 2 at a time to stay under 100/20s limit
+        maxConcurrentDispatches: 1, // Process only 1 at a time to stay under 100/20s limit
     },
 }, async (req) => {
     try {
@@ -27,6 +27,12 @@ export const processSongTask = onTaskDispatched({
 
         // For each song we need to fetch all its arrangements as well
         const arrangements = await getAllArrangementsForSong(song.id);
+
+        // Get all attachments
+        for(let i = 0; i < arrangements.length; i++){
+            const attachments = await getAllAttachmentsForArrangement(song.id, arrangements[i].id);
+            arrangements[i].attachments = attachments;
+        }
 
         // Add the arrangement to song 
         song.arrangements = arrangements;

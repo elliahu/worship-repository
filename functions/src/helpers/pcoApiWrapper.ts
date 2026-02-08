@@ -152,3 +152,69 @@ export const getAllArrangementsForSong = async (song_id: string) => {
 
     return arrangements;
 };
+
+export const getAttachmentLinkForArrangement = async (song_id: string, arrangement_id: string, attachment_id: string) => {
+    // Prepare the url
+    const url = `${PCO_API_DATA_SOURCE.value()}/services/v2/songs/${song_id}/arrangements/${arrangement_id}/attachments/${attachment_id}/open`;
+    logger.info(`Fetching from ${url}`);
+
+    // Make the request
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            Authorization: getPcoAuthHeader(),
+            'Content-Type': 'application/json'
+        }
+    });
+
+    // Check response status
+    if (!response.ok) {
+        throw Error(`${response.status}: Failed to fetch Planning Center attachment open data. Message: ${response.statusText}`);
+    }
+
+    // Parse
+    const result = await response.json();
+    const data = result.data;
+    return data.attributes.attachment_url;
+}
+
+export const getAllAttachmentsForArrangement = async (song_id: string, arrangement_id: string) => {
+    // Prepare the url
+    const url = `${PCO_API_DATA_SOURCE.value()}/services/v2/songs/${song_id}/arrangements/${arrangement_id}/attachments`;
+    logger.info(`Fetching from ${url}`);
+
+    // For now we ignore that there may be 100+ attachments (there are not at the moment) so we do not paginate
+
+    // Make the request
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            Authorization: getPcoAuthHeader(),
+            'Content-Type': 'application/json'
+        }
+    });
+
+    // Check response status
+    if (!response.ok) {
+        throw Error(`${response.status}: Failed to fetch Planning Center attachment data. Message: ${response.statusText}`);
+    }
+
+    // Parse
+    const result = await response.json();
+    logger.info("Retrieved ", result.meta.count, " attachments for arrangement ", arrangement_id);
+    const data = result.data;
+    const attachments: any[] = [];
+
+    if (Array.isArray(data)) {
+        for (const att of data) {
+            const link = await getAttachmentLinkForArrangement(song_id, arrangement_id, att.id);
+            attachments.push({
+                id: att.id,
+                link: link,
+                ...att.attributes
+            });
+        }
+    }
+
+    return attachments;
+}
