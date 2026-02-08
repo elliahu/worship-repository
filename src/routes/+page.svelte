@@ -19,7 +19,7 @@
       <ArrowRight class="size-4 transition-transform group-hover:translate-x-1" />
     </Button>
     
-    <Button href="#" variant="outline" size="lg">
+    <Button href="https://github.com/elliahu/worship-repository" variant="outline" size="lg">
       View GitHub
     </Button>
   </div>

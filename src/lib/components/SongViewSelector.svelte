@@ -4,7 +4,7 @@
 	let { value = $bindable() }: { value: string } = $props();
 
 	const views = [
-		{ label: "Chordchart", value: "chordchart" },
+		{ label: "Chord chart", value: "chordchart" },
 		{ label: "Lyrics", value: "lyrics" },
 		{ label: "Sections", value: "sections" },
 	];
