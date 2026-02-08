@@ -15,6 +15,7 @@
   import SongChordChart from "$lib/components/SongChordChart.svelte";
   import SongLyrics from "$lib/components/SongLyrics.svelte";
   import SongSections from "$lib/components/SongSections.svelte";
+  import SongAttachments from "$lib/components/SongAttachments.svelte";
 
   let { params }: { params: { id: string } } = $props();
 
@@ -82,15 +83,24 @@
         )}
         {#if selectedArr}
           <SongArrangement arrangement={selectedArr} />
+          {#if selectedArr.attachments}
+            <SongAttachments attachments={selectedArr.attachments} />
+          {/if}
         {/if}
 
         {#if selectedView === "chordchart"}
-          {#if selectedArr && selectedArr.chord_chart }
-            <SongChordChart chordchart={selectedArr.chord_chart} lyricsOnly={selectedArr.lyrics ?? ""} />
+          {#if selectedArr && selectedArr.chord_chart}
+            <SongChordChart
+              chordchart={selectedArr.chord_chart}
+              lyricsOnly={selectedArr.lyrics ?? ""}
+            />
           {/if}
         {:else if selectedView === "sections"}
           {#if selectedArr && selectedArr.sections && selectedArr.sections.sections}
-            <SongSections sections={selectedArr.sections.sections} sequence={selectedArr.sequence_full ?? []}/>
+            <SongSections
+              sections={selectedArr.sections.sections}
+              sequence={selectedArr.sequence_full ?? []}
+            />
           {/if}
         {/if}
       {:else}

@@ -4,5 +4,5 @@
     let { chordchart, lyricsOnly }: { chordchart: string; lyricsOnly:string } = $props();
 </script>
 
-<h1 class="text-base">Chord chart</h1>
+<h1 class="text-base font-semibold">Chord chart</h1>
 <ChordSheet songInput={chordchart} lyricsOnly={lyricsOnly} showChords />

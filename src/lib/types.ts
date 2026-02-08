@@ -1,17 +1,17 @@
 export interface Key {
     id: string,
-    created_at?: string | undefined;
-    updated_at?: string | undefined;
-    name?: string | undefined;
-    starting_key?: string | undefined;
-    ending_key?: string | undefined;
-    starting_minor?: boolean | undefined;
-    ending_minor?: boolean | undefined;
+    created_at?: string;
+    updated_at?: string;
+    name?: string;
+    starting_key?: string;
+    ending_key?: string;
+    starting_minor?: boolean;
+    ending_minor?: boolean;
 }
 
 export interface ArrangementSection {
-    label?: string | undefined;
-    lyrics?: string | undefined;
+    label?: string;
+    lyrics?: string;
 }
 
 
@@ -26,49 +26,65 @@ export interface SequenceElement {
     number: number
 }
 
+export interface Attachment {
+    id: string,
+    allow_mp3_download?: boolean,
+    content?: string,
+    content_type?: string,
+    created_at?: string,
+    display_name?: string,
+    downloadable: boolean,
+    file_size: number,
+    filename?: string,
+    filetype?: string,
+    has_preview: boolean,
+    link: string
+}
+
 export interface Arrangement {
     id: string,
-    name?: string | undefined;
-    bpm?: number | undefined,
-    created_at?: string | undefined;
-    updated_at?: string | undefined;
-    has_chords?: boolean | undefined;
-    has_chord_chart?: boolean | undefined;
-    length?: number | undefined;
-    meter?: string | undefined;
-    notes?: string | undefined;
-    chord_chart?: string | undefined;
-    chord_chart_key?: string | undefined;
+    name?: string;
+    bpm?: number;
+    created_at?: string;
+    updated_at?: string;
+    has_chords?: boolean;
+    has_chord_chart?: boolean;
+    length?: number;
+    meter?: string;
+    notes?: string;
+    chord_chart?: string;
+    chord_chart_key?: string;
     sequence?: string[];
     sequence_short?: string[];
     sequence_full?: SequenceElement[];
-    lyrics?: string | undefined;
+    lyrics?: string;
     keys?: Key[];
-    sections?: ArrangementSections | undefined;
+    sections?: ArrangementSections;
+    attachments?: Attachment[] 
 }
 
 export interface Song {
     id: string;
-    title?: string | undefined;
-    created_at?: string | undefined;
-    updated_at?: string | undefined;
-    admin?: string | undefined;
-    author?: string | undefined;
-    copyright?: string | undefined;
-    hidden?: boolean | undefined;
-    notes?: string | undefined;
-    themes?: string | undefined;
-    last_scheduled_short_date?: string | undefined;
-    last_scheduled_at?: string | undefined;
-    ccli_number?: number | undefined;
+    title?: string;
+    created_at?: string;
+    updated_at?: string;
+    admin?: string;
+    author?: string;
+    copyright?: string;
+    hidden?: boolean;
+    notes?: string;
+    themes?: string;
+    last_scheduled_short_date?: string;
+    last_scheduled_at?: string;
+    ccli_number?: number;
     arrangements?: Arrangement[];
 }
 
 export interface IndexItem {
     id: string,
     title: string,
-    author?: string | undefined;
-    last_scheduled?: string | undefined;
+    author?: string;
+    last_scheduled?: string;
 }
 
 export interface Index {
