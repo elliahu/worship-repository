@@ -5,6 +5,7 @@
 	import Breadcrumbs from "$lib/components/Breadcrumbs.svelte";
 	import { page } from "$app/state";
 	import Footer from "$lib/components/Footer.svelte";
+	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 
 	let { children } = $props();
 
@@ -17,10 +18,11 @@
 	<link rel="icon" href={favicon} />
 	<title>Worship Repository</title>
 </svelte:head>
-
-<ModeWatcher />
-<div class="p-10 space-y-6">
-	<Breadcrumbs {url} />
-	{@render children()}
-</div>
-<Footer/>
+<Tooltip.Provider>
+	<ModeWatcher />
+	<div class="p-10 space-y-6">
+		<Breadcrumbs {url} />
+		{@render children()}
+	</div>
+	<Footer />
+</Tooltip.Provider>

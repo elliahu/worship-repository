@@ -5,7 +5,6 @@
 
 	const views = [
 		{ label: "Chord chart", value: "chordchart" },
-		{ label: "Lyrics only", value: "lyrics" },
 		{ label: "Sections", value: "sections" },
 	];
 

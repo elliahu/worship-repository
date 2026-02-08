@@ -85,16 +85,12 @@
         {/if}
 
         {#if selectedView === "chordchart"}
-          {#if selectedArr && selectedArr.chord_chart}
-            <SongChordChart chordchart={selectedArr.chord_chart} />
-          {/if}
-        {:else if selectedView === "lyrics"}
-          {#if selectedArr && selectedArr.lyrics}
-            <SongLyrics lyrics={selectedArr.lyrics} />
+          {#if selectedArr && selectedArr.chord_chart }
+            <SongChordChart chordchart={selectedArr.chord_chart} lyricsOnly={selectedArr.lyrics ?? ""} />
           {/if}
         {:else if selectedView === "sections"}
           {#if selectedArr && selectedArr.sections && selectedArr.sections.sections}
-            <SongSections sections={selectedArr.sections.sections}/>
+            <SongSections sections={selectedArr.sections.sections} sequence={selectedArr.sequence_full ?? []}/>
           {/if}
         {/if}
       {:else}
