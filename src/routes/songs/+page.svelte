@@ -23,8 +23,6 @@
   });
 </script>
 
-<div class="p-10 space-y-6">
-  <h1 class="text-3xl font-bold tracking-tight">Browse Repository</h1>
+<h1 class="text-3xl font-bold tracking-tight">Browse Repository</h1>
 
-  <SongsTable {data} {loading} {error} onSelect={goToDetail} />
-</div>
+<SongsTable {data} {loading} {error} onSelect={goToDetail} />

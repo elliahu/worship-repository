@@ -25,7 +25,7 @@
 <div class="space-y-2">
   <!-- Search + Summary -->
   <div class="flex items-center justify-between space-x-4">
-    <Input type="email" placeholder="Search by title or author..." class="max-w-xs" bind:value={searchTerm}/>
+    <Input type="text" placeholder="Search by title or author..." class="max-w-xs" bind:value={searchTerm}/>
 
     {#if loading}
       <p class="text-sm text-muted-foreground">Loading…</p>

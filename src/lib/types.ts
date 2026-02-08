@@ -9,7 +9,7 @@ export interface Key {
     ending_minor?: boolean | undefined;
 }
 
-export interface ArrangementSection{
+export interface ArrangementSection {
     label?: string | undefined;
     lyrics?: string | undefined;
 }
@@ -18,6 +18,12 @@ export interface ArrangementSection{
 export interface ArrangementSections {
     id: string,
     sections?: ArrangementSection[]
+}
+
+export interface SequenceElement {
+    id: number,
+    label: string,
+    number: number
 }
 
 export interface Arrangement {
@@ -35,7 +41,7 @@ export interface Arrangement {
     chord_chart_key?: string | undefined;
     sequence?: string[];
     sequence_short?: string[];
-    sequence_full?: string[];
+    sequence_full?: SequenceElement[];
     lyrics?: string | undefined;
     keys?: Key[];
     sections?: ArrangementSections | undefined;
@@ -58,13 +64,13 @@ export interface Song {
     arrangements?: Arrangement[];
 }
 
-export interface IndexItem{
+export interface IndexItem {
     id: string,
     title: string,
     author?: string | undefined;
     last_scheduled?: string | undefined;
 }
 
-export interface Index{
+export interface Index {
     index: IndexItem[];
 }
