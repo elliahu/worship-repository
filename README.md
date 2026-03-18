@@ -1,8 +1,14 @@
 # Worship Repository App
 
-This is code repo for the Worship Repository App. Built with Svelte.
+This is code repo for the Worship Repository App. Built with Svelte, running on Firebase.
 
 ## Developing
+First create `.env.local` file
+```env
+PCO_API_DATA_SOURCE = https://api.planningcenteronline.com
+PCO_CLIENT_ID = <client_id>
+PCO_ACCESS_TOKEN = <access_token>
+```
 
 Once you've cloned the project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
@@ -16,7 +22,7 @@ Always develop new features in a new branch.
 
 ## Building
 
-To create a production version of your app:
+To create a production version of the app:
 
 ```sh
 npm run build

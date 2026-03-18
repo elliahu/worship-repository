@@ -1,10 +1,21 @@
 <script lang="ts">
     import { Info } from "lucide-svelte";
+    import { onMount } from "svelte";
     import { parseChordSheet } from "$lib/chordParser";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { Printer, Fullscreen, FileMusic, File } from "lucide-svelte";
+
+    // Esc to disable fullscreen
+    onMount(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") isFullscreen = false;
+        };
+
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    });
 
     let {
         songInput,
@@ -33,10 +44,18 @@
         formatOptions.find((f) => f.value === selectedFormat)?.label ??
             "Select format",
     );
+
+    let isFullscreen = $state(false);
 </script>
 
 <div
-    class="print-content w-full max-w-3xl p-4 md:p-6 bg-card text-card-foreground rounded-xl shadow-sm border border-border font-sans transition-colors print:shadow-none print:border-none print:p-0 print:bg-white print:text-black"
+    class={`print-content w-full max-w-3xl p-4 md:p-6 bg-card text-card-foreground rounded-xl shadow-sm border border-border font-sans transition-all duration-200
+    ${
+        isFullscreen
+            ? "fixed inset-0 z-50 max-w-none w-screen h-screen overflow-auto rounded-none"
+            : ""
+    }
+    print:shadow-none print:border-none print:p-0 print:bg-white print:text-black`}
 >
     <div
         class="flex items-center gap-2 mb-6 pb-4 border-b border-border sticky top-0 bg-card/95 backdrop-blur-sm z-10 print:hidden"
@@ -87,7 +106,11 @@
             <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
 
-            <Fullscreen class="cursor-pointer" strokeWidth={1} />
+            <Fullscreen
+                onclick={() => (isFullscreen = !isFullscreen)}
+                class="cursor-pointer"
+                strokeWidth={1}
+            />
 
             <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
