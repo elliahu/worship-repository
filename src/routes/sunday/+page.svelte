@@ -103,7 +103,9 @@
             <Item.Root
                 variant="muted"
                 onclick={() =>
-                    goto(`/songs/${item.relationships.song.data.id}`)}
+                    goto(
+                        `/songs/${item.relationships.song.data.id}/${item.relationships.arrangement.data.id}`,
+                    )}
                 class="cursor-pointer hover:bg-muted/80 transition-colors"
             >
                 <Item.Media>
