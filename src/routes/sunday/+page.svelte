@@ -5,11 +5,14 @@
     import { onMount } from "svelte";
     import { Spinner } from "$lib/components/ui/spinner/index.js";
     import * as Item from "$lib/components/ui/item/index.js";
-    import { ArrowRight, Frown, Music } from "lucide-svelte";
+    import { ArrowRight, Frown, Music, QrCodeIcon } from "lucide-svelte";
     import { goto } from "$app/navigation";
     import { page } from "$app/state";
     import { Checkbox } from "$lib/components/ui/checkbox/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+    import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import QRCode from "qrcode";
 
     const eng = $derived.by(() => page.url.searchParams.get("eng") === "true");
 
@@ -18,6 +21,7 @@
     let error = $state<string | null>(null);
     let serviceItems = $state<any[] | null>([]);
     let englishPreferred = $state(eng);
+    let qrUrl = $state<string | null>(null);
 
     $effect(() => {
         englishPreferred = eng;
@@ -40,6 +44,18 @@
             keepFocus: true,
             invalidateAll: false,
         });
+    });
+
+    $effect(() => {
+        const url = page.url.href;
+
+        QRCode.toDataURL(url)
+            .then((data: any) => {
+                qrUrl = data;
+            })
+            .catch((err: any) => {
+                console.error("QR generation failed", err);
+            });
     });
 
     // Fetches the id of the sunday service service type
@@ -112,6 +128,39 @@
         </div>
     </div>
 </div>
+
+<AlertDialog.Root>
+    <AlertDialog.Trigger class={buttonVariants({ variant: "outline" })}>
+        <QrCodeIcon /> Share this page
+    </AlertDialog.Trigger>
+    <AlertDialog.Content>
+        <AlertDialog.Header>
+            <AlertDialog.Title>Share this QR code</AlertDialog.Title>
+            <AlertDialog.Description>
+                <p>Scanning this QR code will take you to this page.</p>
+                <p>
+                    <em
+                        >{englishPreferred
+                            ? "Note: 'Prefer english translations' is selected. The QR code will retain this option when shared. If you don't want that, unselect the option."
+                            : ""}</em
+                    >
+                </p>
+            </AlertDialog.Description>
+            {#if qrUrl}
+                <img
+                    src={qrUrl}
+                    alt="QR code for current page"
+                    class="w-full"
+                />
+            {:else}
+                <p>Generating QR code...</p>
+            {/if}
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel>Close</AlertDialog.Cancel>
+        </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>
 
 {#if error}
     <Alert.Root variant="destructive">
