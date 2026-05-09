@@ -103,8 +103,6 @@
             loadingMesage = "Almost done, hang tight...";
             serviceItems = items.data;
 
-            console.log(items);
-
             // End the loading
             loading = false;
         } catch (err) {
