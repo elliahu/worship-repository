@@ -2,7 +2,6 @@
     import { Info } from "lucide-svelte";
     import { onMount } from "svelte";
     import { parseChordSheet } from "$lib/chordParser";
-    import { Button } from "$lib/components/ui/button/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { Printer, Fullscreen, FileMusic, File } from "lucide-svelte";
