@@ -4,7 +4,7 @@
     import * as Card from "$lib/components/ui/card";
     import * as Alert from "$lib/components/ui/alert";
     import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
-    import type { Song, Arrangement } from "$lib/types";
+    import type { Song } from "$lib/types";
     import SongBasicInfo from "$lib/components/SongBasicInfo.svelte";
     import SongHeader from "$lib/components/SongHeader.svelte";
     import SongArrangement from "$lib/components/SongArrangement.svelte";
@@ -13,13 +13,18 @@
     import SongDetailSkeleton from "$lib/components/SongDetailSkeleton.svelte";
     import * as Item from "$lib/components/ui/item/index.js";
     import SongChordChart from "$lib/components/SongChordChart.svelte";
-    import SongLyrics from "$lib/components/SongLyrics.svelte";
     import SongSections from "$lib/components/SongSections.svelte";
     import SongAttachments from "$lib/components/SongAttachments.svelte";
     import { page } from "$app/state";
+    import { goto } from "$app/navigation";
+
+    // Id is required
+    // preferedArrangement - if provided, displays this arrangement as default
+    // eng - if provided, preferedArrangement is overriden to prefer english arrangements
 
     const id = $derived(page.params.id);
-    const preferedArrangement = $derived(page.params.arrangement);
+    let preferedArrangement = $derived(page.params.arrangement);
+    const eng = $derived.by(() => page.url.searchParams.get("eng") === "true");
 
     let song = $state<Song | null>(null);
     let loading = $state(true);
@@ -34,6 +39,17 @@
             try {
                 const result = await getSongDetail({ id: id! });
                 song = result;
+
+                if (eng) {
+                    let engArrangement = song.arrangements?.find(
+                        (a) =>
+                            a.name?.toLocaleLowerCase().includes("anglicky") ||
+                            a.name?.toLocaleLowerCase().includes("english"),
+                    );
+                    if (engArrangement) {
+                        preferedArrangement = engArrangement.id;
+                    }
+                }
 
                 const arrangementExists = song.arrangements?.some(
                     (a) => a.id === preferedArrangement,
@@ -52,12 +68,17 @@
         loadSong();
     });
 
+    // This updates url when arrangement is selected in a dropdown
     $effect(() => {
         if (!selectedArrangement || !id) return;
 
         const url = `/songs/${id}/${selectedArrangement}`;
-
-        history.replaceState(history.state, "", url);
+        goto(`/songs/${id}/${selectedArrangement}`, {
+            replaceState: true,
+            noScroll: true,
+            keepFocus: true,
+            invalidateAll: false,
+        });
     });
 </script>
 

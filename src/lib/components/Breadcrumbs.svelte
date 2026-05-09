@@ -1,13 +1,19 @@
 <script lang="ts">
     import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+    import { page } from "$app/state";
 
-    let { url }: { url: string } = $props();
-
-    let crumbs = $derived(url.split("/").filter(Boolean));
+    let crumbs = $derived.by(() =>
+        page.url.pathname.split("/").filter(Boolean),
+    );
 
     const getRoute = (index: number) => {
-        let route = "/" + crumbs.slice(0, index + 1).join("/");
-        return route;
+        return "/" + crumbs.slice(0, index + 1).join("/");
+    };
+
+    const format = (value: string) => {
+        return value
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
     };
 </script>
 
@@ -16,15 +22,19 @@
         <Breadcrumb.Item>
             <Breadcrumb.Link href="/">Home</Breadcrumb.Link>
         </Breadcrumb.Item>
+
         {#each crumbs as crumb, index}
             <Breadcrumb.Separator />
+
             <Breadcrumb.Item>
-                {#if index == crumbs.length - 1}
-                    <Breadcrumb.Page>{crumb}</Breadcrumb.Page>
+                {#if index === crumbs.length - 1}
+                    <Breadcrumb.Page>
+                        {format(crumb)}
+                    </Breadcrumb.Page>
                 {:else}
-                    <Breadcrumb.Link href={getRoute(index)}
-                        >{crumb}</Breadcrumb.Link
-                    >
+                    <Breadcrumb.Link href={getRoute(index)}>
+                        {format(crumb)}
+                    </Breadcrumb.Link>
                 {/if}
             </Breadcrumb.Item>
         {/each}

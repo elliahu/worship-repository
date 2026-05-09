@@ -7,11 +7,40 @@
     import * as Item from "$lib/components/ui/item/index.js";
     import { ArrowRight, Frown, Music } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { page } from "$app/state";
+    import { Checkbox } from "$lib/components/ui/checkbox/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
+
+    const eng = $derived.by(() => page.url.searchParams.get("eng") === "true");
 
     let loading = $state<boolean>(true);
     let loadingMesage = $state<string>("");
     let error = $state<string | null>(null);
     let serviceItems = $state<any[] | null>([]);
+    let englishPreferred = $state(eng);
+
+    $effect(() => {
+        englishPreferred = eng;
+    });
+
+    $effect(() => {
+        const url = new URL(window.location.href);
+        const shouldBe = englishPreferred ? "true" : null;
+
+        const current = url.searchParams.get("eng");
+
+        if (current === (shouldBe ?? null)) return;
+
+        if (englishPreferred) url.searchParams.set("eng", "true");
+        else url.searchParams.delete("eng");
+
+        goto(url.pathname + url.search, {
+            replaceState: true,
+            noScroll: true,
+            keepFocus: true,
+            invalidateAll: false,
+        });
+    });
 
     // Fetches the id of the sunday service service type
     async function fetchSundayServiceType(): Promise<string> {
@@ -74,6 +103,15 @@
 </script>
 
 <h1 class="text-3xl font-bold tracking-tight">Sunday playlist</h1>
+<div class="flex items-center justify-between mt-2 mb-4">
+    <div class="text-sm text-muted-foreground">Sunday playlist items</div>
+    <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
+            <Checkbox id="terms" bind:checked={englishPreferred} />
+            <Label for="terms">Prefer english translations when possible</Label>
+        </div>
+    </div>
+</div>
 
 {#if error}
     <Alert.Root variant="destructive">
@@ -104,7 +142,7 @@
                 variant="muted"
                 onclick={() =>
                     goto(
-                        `/songs/${item.relationships.song.data.id}/${item.relationships.arrangement.data.id}`,
+                        `/songs/${item.relationships.song.data.id}/${item.relationships.arrangement.data.id}${eng ? "?eng=true" : ""}`,
                     )}
                 class="cursor-pointer hover:bg-muted/80 transition-colors"
             >

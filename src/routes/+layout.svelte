@@ -3,16 +3,10 @@
     import favicon from "$lib/assets/favicon.svg";
     import { ModeWatcher } from "mode-watcher";
     import Breadcrumbs from "$lib/components/Breadcrumbs.svelte";
-    import { page } from "$app/state";
     import Footer from "$lib/components/Footer.svelte";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-    import { Music } from "lucide-svelte";
 
     let { children } = $props();
-
-    let url: string = $derived.by(() => {
-        return page.url.pathname;
-    });
 </script>
 
 <svelte:head>
@@ -25,7 +19,7 @@
         <div class="p-5 space-y-6">
             <div class="flex justify-between">
                 <div class="">
-                    <Breadcrumbs {url} />
+                    <Breadcrumbs />
                 </div>
                 <div class=""></div>
             </div>
