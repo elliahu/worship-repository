@@ -4,13 +4,13 @@ export interface ChordChunk {
 }
 
 export interface LineData {
-  type: "lyrics" | "header" | "empty" | "chords"; // "chords" = orphaned chord line
+  type: "lyrics" | "header" | "empty" | "chords";
   chunks: ChordChunk[];
   raw: string;
 }
 
-// Permissive chord token: starts with a note letter, allows modifiers,
-// slash bass (D/F#), and transposition suffix in parens C(G)
+// CHORD DETECTION
+
 const CHORD_TOKEN_RE =
   /^[A-Ga-g][#b♯♭]?[A-Za-z0-9#b]*(\/[A-Ga-g][#b♯♭]?[A-Za-z0-9#b]*)?(\([A-Za-z0-9#b\/]+\))?$/;
 
@@ -18,23 +18,101 @@ function isChordToken(token: string): boolean {
   return CHORD_TOKEN_RE.test(token);
 }
 
-/** Returns true if every whitespace-separated token on the line is a chord */
 function isChordLine(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed) return false;
   return trimmed.split(/\s+/).every(isChordToken);
 }
 
-/** Merge a positional chord line with the lyrics line beneath it */
+// TRANSPOSITION
+
+const SHARP_SCALE = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
+
+const FLAT_EQUIVALENTS: Record<string, string> = {
+  Db: "C#",
+  Eb: "D#",
+  Gb: "F#",
+  Ab: "G#",
+  Bb: "A#",
+  "D♭": "C#",
+  "E♭": "D#",
+  "G♭": "F#",
+  "A♭": "G#",
+  "B♭": "A#",
+};
+
+function normalizeNote(note: string): string {
+  return FLAT_EQUIVALENTS[note] ?? note.replace("♯", "#").replace("♭", "b");
+}
+
+function transposeNote(note: string, semitones: number): string {
+  const normalized = normalizeNote(note);
+
+  const idx = SHARP_SCALE.indexOf(normalized);
+  if (idx === -1) return note;
+
+  const next = (idx + semitones + 12) % 12;
+  return SHARP_SCALE[next]!;
+}
+
+/**
+ * Transposes a chord like:
+ * Cmaj7 -> Dmaj7
+ * F#m   -> G#m
+ * Bb/D  -> C/E
+ * C(G)  -> D(A)
+ */
+export function transposeChord(chord: string, semitones: number): string {
+  return chord.replace(/([A-G][#b♯♭]?)/g, (match) =>
+    transposeNote(match, semitones),
+  );
+}
+
+/**
+ * Transpose all chords in parsed lines
+ */
+export function transposeChordSheet(
+  lines: LineData[],
+  semitones: number,
+): LineData[] {
+  return lines.map((line) => ({
+    ...line,
+    chunks: line.chunks.map((chunk) => ({
+      ...chunk,
+      chord: chunk.chord ? transposeChord(chunk.chord, semitones) : null,
+    })),
+  }));
+}
+
+// PARSING
+
 function mergeChordLineWithLyrics(
   chordLine: string,
   lyricsLine: string,
 ): ChordChunk[] {
   const chordPositions: Array<{ chord: string; pos: number }> = [];
+
   const re = /\S+/g;
   let m: RegExpExecArray | null;
+
   while ((m = re.exec(chordLine)) !== null) {
-    chordPositions.push({ chord: m[0], pos: m.index });
+    chordPositions.push({
+      chord: m[0],
+      pos: m.index,
+    });
   }
 
   if (chordPositions.length === 0) {
@@ -44,61 +122,95 @@ function mergeChordLineWithLyrics(
   const chunks: ChordChunk[] = [];
   const len = lyricsLine.length;
 
-  // Text before the first chord column
   if (chordPositions[0].pos > 0) {
     const prefix = lyricsLine.slice(0, chordPositions[0].pos);
-    if (prefix.trim()) chunks.push({ chord: null, lyrics: prefix });
+
+    if (prefix.trim()) {
+      chunks.push({
+        chord: null,
+        lyrics: prefix,
+      });
+    }
   }
 
   for (let i = 0; i < chordPositions.length; i++) {
     const { chord, pos } = chordPositions[i];
+
     const nextPos =
       i + 1 < chordPositions.length ? chordPositions[i + 1].pos : len;
+
     const lyrics = lyricsLine.slice(pos, Math.min(nextPos, len));
-    chunks.push({ chord, lyrics: lyrics ?? "" });
+
+    chunks.push({
+      chord,
+      lyrics: lyrics ?? "",
+    });
   }
 
   return chunks;
 }
 
-/** Parse a standalone chord-only line into chunks (no associated lyrics) */
 function parseChordOnlyLine(line: string): ChordChunk[] {
   const re = /\S+/g;
   let m: RegExpExecArray | null;
+
   const chunks: ChordChunk[] = [];
+
   while ((m = re.exec(line)) !== null) {
-    chunks.push({ chord: m[0], lyrics: "" });
+    chunks.push({
+      chord: m[0],
+      lyrics: "",
+    });
   }
+
   return chunks;
 }
 
-/** Parse a line with inline [Chord]lyrics notation */
 function parseInlineChordLine(line: string): LineData {
   const regex = /(\[.*?\])|([^\[]+)/g;
   const matches = line.match(regex) || [];
+
   const chunks: ChordChunk[] = [];
 
   if (matches.length > 0 && !matches[0]!.startsWith("[")) {
-    chunks.push({ chord: null, lyrics: matches[0] ?? "" });
+    chunks.push({
+      chord: null,
+      lyrics: matches[0] ?? "",
+    });
+
     matches.shift();
   }
 
   for (let i = 0; i < matches.length; i++) {
     const part = matches[i]!;
+
     if (part.startsWith("[")) {
       const chordName = part.replace(/[\[\]]/g, "");
+
       let lyrics = "";
+
       if (i + 1 < matches.length && !matches[i + 1]!.startsWith("[")) {
         lyrics = matches[i + 1]!;
         i++;
       }
-      chunks.push({ chord: chordName, lyrics });
+
+      chunks.push({
+        chord: chordName,
+        lyrics,
+      });
     } else {
-      chunks.push({ chord: null, lyrics: part });
+      chunks.push({
+        chord: null,
+        lyrics: part,
+      });
     }
   }
 
-  return { type: "lyrics", chunks, raw: line };
+  return {
+    type: "lyrics",
+    chunks,
+    raw: line,
+  };
 }
 
 const HEADER_PATTERN =
@@ -107,6 +219,7 @@ const HEADER_PATTERN =
 function classifyPlainLine(line: string): LineData {
   const trimmed = line.trim();
   const wordCount = trimmed.split(/\s+/).length;
+
   if (HEADER_PATTERN.test(trimmed) || wordCount <= 3) {
     return {
       type: "header",
@@ -114,12 +227,19 @@ function classifyPlainLine(line: string): LineData {
       raw: line,
     };
   }
-  return { type: "lyrics", chunks: [{ chord: null, lyrics: line }], raw: line };
+
+  return {
+    type: "lyrics",
+    chunks: [{ chord: null, lyrics: line }],
+    raw: line,
+  };
 }
 
 export function parseChordSheet(input: string): LineData[] {
   const lines = input.split("\n");
+
   const result: LineData[] = [];
+
   let pendingChordLine: string | null = null;
 
   const flushPending = () => {
@@ -129,6 +249,7 @@ export function parseChordSheet(input: string): LineData[] {
         chunks: parseChordOnlyLine(pendingChordLine),
         raw: pendingChordLine,
       });
+
       pendingChordLine = null;
     }
   };
@@ -136,39 +257,48 @@ export function parseChordSheet(input: string): LineData[] {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // 1. Empty line — flush any pending chord line
     if (!trimmed) {
       flushPending();
-      result.push({ type: "empty", chunks: [], raw: line });
+
+      result.push({
+        type: "empty",
+        chunks: [],
+        raw: line,
+      });
+
       continue;
     }
 
-    // 2. Inline [Chord] format
     if (line.includes("[")) {
       flushPending();
       result.push(parseInlineChordLine(line));
       continue;
     }
 
-    // 3. Chord-only line (above-lyric format)
     if (isChordLine(line)) {
-      flushPending(); // two chord lines in a row — flush the first
+      flushPending();
       pendingChordLine = line;
       continue;
     }
 
-    // 4. Regular text line with a pending chord line above it → merge
     if (pendingChordLine !== null) {
       const chunks = mergeChordLineWithLyrics(pendingChordLine, line);
-      result.push({ type: "lyrics", chunks, raw: line });
+
+      result.push({
+        type: "lyrics",
+        chunks,
+        raw: line,
+      });
+
       pendingChordLine = null;
+
       continue;
     }
 
-    // 5. Plain text line — header or chord-less lyrics
     result.push(classifyPlainLine(line));
   }
 
-  flushPending(); // trailing chord line with no lyrics after it
+  flushPending();
+
   return result;
 }

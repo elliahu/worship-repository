@@ -1,10 +1,14 @@
 <script lang="ts">
-    import { Info } from "lucide-svelte";
+    import { Info, Maximize, Minimize, Plus } from "lucide-svelte";
     import { onMount } from "svelte";
-    import { parseChordSheet } from "$lib/chordParser";
+    import { parseChordSheet, transposeChordSheet } from "$lib/chordParser";
     import * as Select from "$lib/components/ui/select/index.js";
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { Printer, Fullscreen, FileMusic, File } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+    import * as Item from "$lib/components/ui/item/index.js";
+    import { Button } from "$lib/components/ui/button/index.js";
+    import Minus from "@lucide/svelte/icons/minus";
 
     // Esc to disable fullscreen
     onMount(() => {
@@ -26,7 +30,10 @@
         showChords: boolean;
     } = $props();
 
-    let parsedLines = $derived(parseChordSheet(songInput));
+    let transposedSemitones = $state(0);
+    let parsedLines = $derived(
+        transposeChordSheet(parseChordSheet(songInput), transposedSemitones),
+    );
 
     const handlePrint = () => {
         window.print();
@@ -62,62 +69,142 @@
         <div
             class="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border w-full"
         >
-            <Select.Root
-                type="single"
-                name="selectedFormat"
-                bind:value={selectedFormat}
-            >
-                <Select.Trigger>
-                    {triggerFormatOptionsContent}
-                </Select.Trigger>
-                <Select.Content>
-                    <Select.Group>
-                        <Select.Label>Format</Select.Label>
-                        {#each formatOptions as format}
-                            <Select.Item
-                                value={format.value}
-                                label={format.label}
-                            >
-                                {format.label}
-                            </Select.Item>
-                        {/each}
-                    </Select.Group>
-                </Select.Content>
-            </Select.Root>
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    <Select.Root
+                        type="single"
+                        name="selectedFormat"
+                        bind:value={selectedFormat}
+                    >
+                        <Select.Trigger>
+                            {triggerFormatOptionsContent}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                <Select.Label>Format</Select.Label>
+                                {#each formatOptions as format}
+                                    <Select.Item
+                                        value={format.value}
+                                        label={format.label}
+                                    >
+                                        {format.label}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>
+                        Select how to display the song. Pretty print displays
+                        the song in more readable fashion, while dont't format
+                        displays original raw format.
+                    </p>
+                </Tooltip.Content>
+            </Tooltip.Root>
 
             <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
 
-            {#if showChords}
-                <FileMusic
-                    onclick={() => (showChords = !showChords)}
-                    class="cursor-pointer"
-                    strokeWidth={1}
-                />
-            {:else}
-                <File
-                    onclick={() => (showChords = !showChords)}
-                    class="cursor-pointer"
-                    strokeWidth={1}
-                />
-            {/if}
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onclick={() => {
+                            transposedSemitones--;
+                        }}><Minus /></Button
+                    >
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>Transpose one semtone down</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    <span class="mr-2 ml-2">{transposedSemitones}</span>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>Current transposition in number of semtiones</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onclick={() => {
+                            transposedSemitones++;
+                        }}><Plus /></Button
+                    >
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>Transpose one semtone up</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
 
             <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
 
-            <Fullscreen
-                onclick={() => (isFullscreen = !isFullscreen)}
-                class="cursor-pointer"
-                strokeWidth={1}
-            />
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    {#if showChords}
+                        <FileMusic
+                            onclick={() => (showChords = !showChords)}
+                            class="cursor-pointer"
+                            strokeWidth={1}
+                        />
+                    {:else}
+                        <File
+                            onclick={() => (showChords = !showChords)}
+                            class="cursor-pointer"
+                            strokeWidth={1}
+                        />
+                    {/if}
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>{showChords ? "Hide" : "Show"} chords</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
 
             <!--Devider-->
             <div class="w-[1px] h-4 bg-border mx-1"></div>
-            <Printer
-                onclick={handlePrint}
-                class="cursor-pointer"
-                strokeWidth={1}
-            />
+
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    {#if isFullscreen}
+                        <Minimize
+                            onclick={() => (isFullscreen = !isFullscreen)}
+                            class="cursor-pointer"
+                            strokeWidth={1}
+                        />
+                    {:else}
+                        <Maximize
+                            onclick={() => (isFullscreen = !isFullscreen)}
+                            class="cursor-pointer"
+                            strokeWidth={1}
+                        />
+                    {/if}
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>{isFullscreen ? "Minimize" : "Go fullscreen"}</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
+
+            <!--Devider-->
+            <div class="w-[1px] h-4 bg-border mx-1"></div>
+            <Tooltip.Root>
+                <Tooltip.Trigger>
+                    <Printer
+                        onclick={handlePrint}
+                        class="cursor-pointer"
+                        strokeWidth={1}
+                    />
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                    <p>Print this</p>
+                </Tooltip.Content>
+            </Tooltip.Root>
         </div>
     </div>
 
@@ -130,7 +217,7 @@
                 print in the toolbar above</Alert.Description
             >
         </Alert.Root>
-        <div class="print-area">
+        <div class="print-area mt-8">
             {#each parsedLines as line}
                 {#if line.type === "empty"}
                     <div class="h-6"></div>
