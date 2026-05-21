@@ -189,7 +189,7 @@
                 variant="muted"
                 onclick={() =>
                     goto(
-                        `/songs/${item.relationships.song.data.id}/${item.relationships.arrangement.data.id}${eng ? "?eng=true" : ""}`,
+                        `/songs/${item.relationships.song.data.id}/${item.relationships.arrangement.data.id}?key=${item.relationships.key.data.id}${eng ? "&eng=true" : ""}`,
                     )}
                 class="cursor-pointer hover:bg-muted/80 transition-colors"
             >

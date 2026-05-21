@@ -54,6 +54,55 @@ const FLAT_EQUIVALENTS: Record<string, string> = {
   "B♭": "A#",
 };
 
+const NOTE_TO_INDEX: Record<string, number> = {
+  C: 0,
+  "C#": 1,
+  Db: 1,
+
+  D: 2,
+  "D#": 3,
+  Eb: 3,
+
+  E: 4,
+
+  F: 5,
+  "F#": 6,
+  Gb: 6,
+
+  G: 7,
+  "G#": 8,
+  Ab: 8,
+
+  A: 9,
+  "A#": 10,
+  Bb: 10,
+
+  B: 11,
+  "B♭": 10,
+  "E♭": 3,
+  "A♭": 8,
+  "D♭": 1,
+  "G♭": 6,
+};
+
+export function extractRootKey(key: string): string {
+  const match = key.trim().match(/^[A-G][#b♯♭]?/);
+  if (!match) return key;
+  return normalizeNote(match[0]);
+}
+
+export function getSemitoneDifference(
+  originalKey: string,
+  targetKey: string,
+): number {
+  const from = NOTE_TO_INDEX[extractRootKey(originalKey)];
+  const to = NOTE_TO_INDEX[extractRootKey(targetKey)];
+
+  if (from === undefined || to === undefined) return 0;
+
+  return (to - from + 12) % 12;
+}
+
 function normalizeNote(note: string): string {
   return FLAT_EQUIVALENTS[note] ?? note.replace("♯", "#").replace("♭", "b");
 }
