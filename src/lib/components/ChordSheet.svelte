@@ -23,14 +23,15 @@
     let {
         songInput,
         lyricsOnly,
+        transposedSemitones,
         showChords = $bindable(true),
     }: {
         songInput: string;
         lyricsOnly: string;
+        transposedSemitones: number;
         showChords: boolean;
     } = $props();
 
-    let transposedSemitones = $state(0);
     let parsedLines = $derived(
         transposeChordSheet(parseChordSheet(songInput), transposedSemitones),
     );
