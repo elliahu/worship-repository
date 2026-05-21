@@ -68,7 +68,7 @@
         class="flex items-center gap-2 mb-6 pb-4 border-b border-border sticky top-0 bg-card/95 backdrop-blur-sm z-10 print:hidden"
     >
         <div
-            class="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border w-full"
+            class="flex flex-wrap items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border w-full"
         >
             <Tooltip.Root>
                 <Tooltip.Trigger>

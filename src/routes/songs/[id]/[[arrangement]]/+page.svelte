@@ -150,7 +150,7 @@
         <Item.Content>
             <h1 class="text-xl pb-3">Arrangement</h1>
             {#if song.arrangements && song.arrangements.length > 0}
-                <div class="flex">
+                <div class="flex flex-wrap">
                     <SongArrangementSelector
                         arrangements={song.arrangements}
                         bind:value={selectedArrangement}
