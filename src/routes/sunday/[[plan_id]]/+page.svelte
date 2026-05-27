@@ -13,7 +13,14 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import QRCode from "qrcode";
+    import Calendar from "$lib/components/Calendar.svelte";
+    import {
+        CalendarDate,
+        getLocalTimeZone,
+        today,
+    } from "@internationalized/date";
 
+    const planId = $derived(page.params.plan_id);
     const eng = $derived.by(() => page.url.searchParams.get("eng") === "true");
 
     let loading = $state<boolean>(true);
@@ -22,23 +29,22 @@
     let serviceItems = $state<any[] | null>([]);
     let englishPreferred = $state(eng);
     let qrUrl = $state<string | null>(null);
+    let selectedDate = $state<CalendarDate | undefined>(undefined);
 
     $effect(() => {
         englishPreferred = eng;
     });
 
     $effect(() => {
-        const url = new URL(window.location.href);
-        const shouldBe = englishPreferred ? "true" : null;
+        if (!planId) return; // don't update URL until plan is resolved
+        const params = new URLSearchParams();
+        if (englishPreferred) params.set("eng", "true");
+        const query = params.toString();
+        const url = `/sunday/${planId}` + (query ? `?${query}` : "");
 
-        const current = url.searchParams.get("eng");
+        if (page.url.pathname + page.url.search === url) return;
 
-        if (current === (shouldBe ?? null)) return;
-
-        if (englishPreferred) url.searchParams.set("eng", "true");
-        else url.searchParams.delete("eng");
-
-        goto(url.pathname + url.search, {
+        goto(url, {
             replaceState: true,
             noScroll: true,
             keepFocus: true,
@@ -60,13 +66,13 @@
 
     // Fetches the id of the sunday service service type
     async function fetchSundayServiceType(): Promise<string> {
-        const raw = await fetch("/api/pco/service_types"); // should fetch this 1329064
+        const raw = await fetch("/api/pco/service_types"); // should fetch this 1329064 but rather than hardcode that, we fetch that as it might change later
         const data: any = await raw.json(); // TODO FIXME make this type-safe
         return data.data[0].id;
     }
 
     // Fetches the plan of the next sunday
-    async function fetchSundayPlan(serviceType: string) {
+    async function fetchNextSundayPlan(serviceType: string) {
         const raw = await fetch(`/api/pco/service_types/${serviceType}/plans`);
         const data: any = await raw.json(); // TODO FIXME make this type-safe
         const { start, end } = getNextSundayRange(new Date());
@@ -81,30 +87,54 @@
         return plans[0];
     }
 
+    async function fetchPlans(serviceType: string) {
+        const raw = await fetch(`/api/pco/service_types/${serviceType}/plans`);
+        const data: any = await raw.json(); // TODO FIXME make this type-safe
+        return data;
+    }
+
     // Fetches the plans for the sunday service
-    async function fetchSundayPlanItems(serviceType: string, plan: string) {
+    async function fetchSundayPlanItems(serviceType: string, planId: string) {
         const raw = await fetch(
-            `/api/pco/service_types/${serviceType}/plans/${plan}/items`,
+            `/api/pco/service_types/${serviceType}/plans/${planId}/items`,
         );
         const data: any = await raw.json(); // TODO FIXME make this type-safe
         return data;
     }
 
     onMount(async () => {
-        loadingMesage = "Looking for next sunday...";
-        const serviceType = await fetchSundayServiceType();
-
         try {
-            loadingMesage = "Fetching sunday service plan...";
-            const plan = await fetchSundayPlan(serviceType);
+            loadingMesage = "Looking for next sunday...";
+            const serviceType = await fetchSundayServiceType();
+
+            let resolvedPlanId: string;
+
+            if (planId) {
+                resolvedPlanId = planId;
+            } else {
+                loadingMesage = "Fetching sunday service plan...";
+                const plan = await fetchNextSundayPlan(serviceType);
+                resolvedPlanId = plan.id;
+
+                // Reflect resolved plan in the URL, same pattern as songs page
+                const params = new URLSearchParams();
+                if (eng) params.set("eng", "true");
+                const query = params.toString();
+                goto(`/sunday/${resolvedPlanId}` + (query ? `?${query}` : ""), {
+                    replaceState: true,
+                });
+            }
 
             loadingMesage = "Loading songs from the sunday plan...";
-            const items = await fetchSundayPlanItems(serviceType, plan.id); // "87435317"
+            const items = await fetchSundayPlanItems(
+                serviceType,
+                resolvedPlanId,
+            );
             loadingMesage = "Almost done, hang tight...";
             serviceItems = items.data;
-
-            // End the loading
             loading = false;
+
+            console.log(fetchPlans(serviceType));
         } catch (err) {
             if (err instanceof Error) {
                 error = err.message;
@@ -126,6 +156,14 @@
         </div>
     </div>
 </div>
+
+<Calendar
+    label="Select sunday"
+    bind:value={selectedDate}
+    startDate={new CalendarDate(2024, 1, 1)}
+    endDate={today(getLocalTimeZone())}
+    allowedDays={[0]}
+/>
 
 <AlertDialog.Root>
     <AlertDialog.Trigger class={buttonVariants({ variant: "outline" })}>
@@ -182,7 +220,7 @@
             <Item.Title class="line-clamp-1">{loadingMesage}</Item.Title>
         </Item.Content>
     </Item.Root>
-{:else if serviceItems!.length > 0}
+{:else if serviceItems!.filter((i) => i.attributes.item_type === "song").length > 0}
     {#each serviceItems as item}
         {#if item.attributes.item_type === "song"}
             <Item.Root
