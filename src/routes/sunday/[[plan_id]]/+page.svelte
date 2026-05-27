@@ -13,7 +13,15 @@
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { buttonVariants } from "$lib/components/ui/button/index.js";
     import QRCode from "qrcode";
+    import Calendar from "$lib/components/Calendar.svelte";
+    import {
+        CalendarDate,
+        getLocalTimeZone,
+        today,
+        parseDate,
+    } from "@internationalized/date";
 
+    const planId = $derived(page.params.plan_id);
     const eng = $derived.by(() => page.url.searchParams.get("eng") === "true");
 
     let loading = $state<boolean>(true);
@@ -22,23 +30,28 @@
     let serviceItems = $state<any[] | null>([]);
     let englishPreferred = $state(eng);
     let qrUrl = $state<string | null>(null);
+    let selectedDate = $state<CalendarDate | undefined>(undefined);
+    let plans = $state<any[]>([]);
+    let serviceType = $state<string | null>(null);
+
+    const availableDates = $derived(
+        plans.map((p) => parseDate(p.attributes.sort_date.split("T")[0])),
+    );
 
     $effect(() => {
         englishPreferred = eng;
     });
 
     $effect(() => {
-        const url = new URL(window.location.href);
-        const shouldBe = englishPreferred ? "true" : null;
+        if (!planId) return;
+        const params = new URLSearchParams();
+        if (englishPreferred) params.set("eng", "true");
+        const query = params.toString();
+        const url = `/sunday/${planId}` + (query ? `?${query}` : "");
 
-        const current = url.searchParams.get("eng");
+        if (page.url.pathname + page.url.search === url) return;
 
-        if (current === (shouldBe ?? null)) return;
-
-        if (englishPreferred) url.searchParams.set("eng", "true");
-        else url.searchParams.delete("eng");
-
-        goto(url.pathname + url.search, {
+        goto(url, {
             replaceState: true,
             noScroll: true,
             keepFocus: true,
@@ -46,10 +59,26 @@
         });
     });
 
+    // Navigate to plan when a date is picked in the calendar
     $effect(() => {
-        const url = page.url.href;
+        if (!selectedDate) return;
 
-        QRCode.toDataURL(url)
+        const match = plans.find((p) =>
+            p.attributes.sort_date.startsWith(selectedDate!.toString()),
+        );
+
+        if (!match || match.id === planId) return;
+
+        const params = new URLSearchParams();
+        if (eng) params.set("eng", "true");
+        const query = params.toString();
+        goto(`/sunday/${match.id}` + (query ? `?${query}` : ""), {
+            replaceState: true,
+        });
+    });
+
+    $effect(() => {
+        QRCode.toDataURL(page.url.href)
             .then((data: any) => {
                 qrUrl = data;
             })
@@ -58,61 +87,94 @@
             });
     });
 
-    // Fetches the id of the sunday service service type
     async function fetchSundayServiceType(): Promise<string> {
-        const raw = await fetch("/api/pco/service_types"); // should fetch this 1329064
-        const data: any = await raw.json(); // TODO FIXME make this type-safe
+        const raw = await fetch("/api/pco/service_types");
+        const data: any = await raw.json();
         return data.data[0].id;
     }
 
-    // Fetches the plan of the next sunday
-    async function fetchSundayPlan(serviceType: string) {
+    async function fetchNextSundayPlan(serviceType: string) {
         const raw = await fetch(`/api/pco/service_types/${serviceType}/plans`);
-        const data: any = await raw.json(); // TODO FIXME make this type-safe
+        const data: any = await raw.json();
         const { start, end } = getNextSundayRange(new Date());
-        const plans = data.data.filter((p: any) => {
-            return isInRange(p.attributes.sort_date, start, end);
-        });
+        const filtered = data.data.filter((p: any) =>
+            isInRange(p.attributes.sort_date, start, end),
+        );
 
-        if (!Array.isArray(plans) || plans.length == 0) {
+        if (!Array.isArray(filtered) || filtered.length === 0) {
             throw new Error("No plans found for the next sunday");
         }
 
-        return plans[0];
+        return filtered[0];
     }
 
-    // Fetches the plans for the sunday service
-    async function fetchSundayPlanItems(serviceType: string, plan: string) {
+    async function fetchPlans(serviceType: string) {
+        const raw = await fetch(`/api/pco/service_types/${serviceType}/plans`);
+        const data: any = await raw.json();
+        return data.data;
+    }
+
+    async function fetchSundayPlanItems(serviceType: string, id: string) {
         const raw = await fetch(
-            `/api/pco/service_types/${serviceType}/plans/${plan}/items`,
+            `/api/pco/service_types/${serviceType}/plans/${id}/items`,
         );
-        const data: any = await raw.json(); // TODO FIXME make this type-safe
+        const data: any = await raw.json();
         return data;
     }
 
+    // Runs once — resolves service type and, if needed, auto-detects the plan
     onMount(async () => {
-        loadingMesage = "Looking for next sunday...";
-        const serviceType = await fetchSundayServiceType();
-
         try {
-            loadingMesage = "Fetching sunday service plan...";
-            const plan = await fetchSundayPlan(serviceType);
+            loadingMesage = "Looking for next sunday...";
+            const type = await fetchSundayServiceType();
+            serviceType = type;
 
-            loadingMesage = "Loading songs from the sunday plan...";
-            const items = await fetchSundayPlanItems(serviceType, plan.id); // "87435317"
-            loadingMesage = "Almost done, hang tight...";
-            serviceItems = items.data;
+            const allPlans = await fetchPlans(type);
+            plans = allPlans;
 
-            // End the loading
-            loading = false;
-        } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                console.log(err.message);
-            } else {
-                error = "Unkwnown error";
+            if (!planId) {
+                loadingMesage = "Fetching sunday service plan...";
+                const plan = await fetchNextSundayPlan(type);
+
+                const params = new URLSearchParams();
+                if (eng) params.set("eng", "true");
+                const query = params.toString();
+                goto(`/sunday/${plan.id}` + (query ? `?${query}` : ""), {
+                    replaceState: true,
+                });
+                // the effect below will take over from here once planId updates
             }
+        } catch (err) {
+            error = err instanceof Error ? err.message : "Unknown error";
+            loading = false;
         }
+    });
+
+    // Re-runs whenever planId changes (including after goto above)
+    $effect(() => {
+        if (!planId || !serviceType) return;
+
+        const currentPlan = plans.find((p) => p.id === planId);
+        if (currentPlan) {
+            selectedDate = parseDate(
+                currentPlan.attributes.sort_date.split("T")[0],
+            );
+        }
+
+        loading = true;
+        error = null;
+        loadingMesage = "Loading songs from the sunday plan...";
+
+        fetchSundayPlanItems(serviceType, planId)
+            .then((items) => {
+                serviceItems = items.data;
+                loadingMesage = "Almost done, hang tight...";
+                loading = false;
+            })
+            .catch((err) => {
+                error = err instanceof Error ? err.message : "Unknown error";
+                loading = false;
+            });
     });
 </script>
 
@@ -126,6 +188,13 @@
         </div>
     </div>
 </div>
+
+<Calendar
+    label="Select sunday"
+    bind:value={selectedDate}
+    {availableDates}
+    disabled={loading}
+/>
 
 <AlertDialog.Root>
     <AlertDialog.Trigger class={buttonVariants({ variant: "outline" })}>
@@ -182,7 +251,7 @@
             <Item.Title class="line-clamp-1">{loadingMesage}</Item.Title>
         </Item.Content>
     </Item.Root>
-{:else if serviceItems!.length > 0}
+{:else if serviceItems!.filter((i) => i.attributes.item_type === "song").length > 0}
     {#each serviceItems as item}
         {#if item.attributes.item_type === "song"}
             <Item.Root
